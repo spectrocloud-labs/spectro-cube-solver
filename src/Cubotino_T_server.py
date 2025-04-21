@@ -39,11 +39,15 @@ version = '7.4 (31 May 2024)'
 
 ################  setting argparser for robot remote usage, and other settings  #################
 import argparse
+import threading
+import asyncio 
 #from mqtt_publisher import send_solution, send_command, send_image,send_face_image
 from fastapi import FastAPI
 from pydantic import BaseModel
 from mqtt_publisher_class import mqtt_publisher
 app = FastAPI()
+robot_api_status = "idle"
+status_lock = threading.Lock()
 
 # argument parser object creation
 parser = argparse.ArgumentParser(description='CLI arguments for Cubotino_T.py')
@@ -3727,18 +3731,20 @@ def start_scrambling(scramb_cycle):
         2) prints on terminal before and after the scrambling
         3) manage the scrambling end, when interrupted.""" 
 
-    global quitting, robot_stop, robot_idle
+    global quitting, robot_stop, robot_idle,robot_api_status
     
     print('\n'*6)               # prints some empty lines, on IDE terminal
     clear_terminal()            # cleares the terminal
     print('#############################################################################')
     print(f'########################    SCRAMBLING CYCLE  {scramb_cycle}    ##########################')
     print('#############################################################################\n')
+    mqtt_publisher.send_status("Scrambling")
     
     scrambling_cube()           # call to the function for random cube generation
     
     if not robot_stop:          # case the robot has not been stopped
         print(f'\n######################    END  SCRAMBLING CYCLE  {scramb_cycle}   ########################')
+        mqtt_publisher.send_status("Scramble finished")
     
     elif robot_stop:            # case the robot has been stopped
         stop_or_quit()          # check if the intention is to stop the cycle or quit (shut Rpi off)
@@ -3747,6 +3753,8 @@ def start_scrambling(scramb_cycle):
         robot_idle = True       # robot is idling
         print(f'\n####################    STOPPED  SCRAMBLING CYCLE  {scramb_cycle}   ######################')
 
+    robot_api_status = "idle" 
+   
 
 
 
@@ -3757,12 +3765,14 @@ def start_solving(solv_cycle):
     """ 1) starts a solving cube cycle
         2) prints on terminal before and after the scrambling
         3) manage the solving end, when interrupted.""" 
-      
+
+    global robot_api_status
     print('\n'*6)               # prints some empty lines, on IDE terminal
     clear_terminal()            # cleares the terminal
     print('#'*80)
     print('#'*23, '       SOLVING CYCLE  ', str(solv_cycle).zfill(2), '      ', '#'*23)
     print('#'*80) 
+    mqtt_publisher.send_status("Solving")
 
     cubeAF()                    # cube reading/solving function is called
 
@@ -3778,6 +3788,9 @@ def start_solving(solv_cycle):
         disp.set_backlight(1)   # display backlight is turned on, in case it wasn't
         cpu_temp(side, delay=2) # cpu temperature is verified, printed at terminal and show at display for delay time
         print('#'*23, '    END  SOLVING CYCLE  ', str(solv_cycle).zfill(2), '    ', '#'*23)
+        mqtt_publisher.send_status("Idle")
+    robot_api_status = "idle"
+    start_up(first_cycle = False)  # sets the initial variables, to use the camera in manual mode
     
 
 
@@ -4859,10 +4872,48 @@ def cubeAF():
         return                                       # cubeAF function is terminated
 
 
-
-
 @app.post("/scramble")
-async def scramble_cube(scramb_cycle: int = 1): #added a default scramble cycle
+async def scramble_cube(scramb_cycle: int = 1):  # Make the route async
+    global robot_api_status
+    with status_lock:
+        if robot_api_status != "idle":
+            raise HTTPException(
+                status_code=HTTPStatus.CONFLICT,
+                detail=f"Robot is currently {robot_status}. Please wait until idle.",
+            )
+        robot_api_status = "scrambling" 
+        # Run the synchronous start_scrambling in a separate thread
+        #try: 
+        asyncio.create_task(asyncio.to_thread(start_scrambling, scramb_cycle))
+        #finally:
+        #    robot_api_status = "idle" 
+        return {"status": "success", "message": "Scramble Initiated."}
+
+@app.post("/solve")
+async def solve_cube(solv_cycle: int = 1):  # Make the route async
+    global robot_api_status
+    with status_lock:
+        if robot_api_status != "idle":
+            raise HTTPException(
+                status_code=HTTPStatus.CONFLICT,
+                detail=f"Robot is currently {robot_status}. Please wait until idle.",
+            )
+        # Run the synchronous start_solving in a separate thread
+        robot_api_status = "solving" 
+        #try:
+        asyncio.create_task(asyncio.to_thread(start_solving, solv_cycle))
+        #finally:
+        #  robot_api_status = "idle"
+        #start_up(first_cycle = False)  # sets the initial variables, to use the camera in manual mode
+        return {"status": "success", "message": "Solve initiated."}
+
+@app.get("/status")
+async def get_status():  # Make the status route async as well
+    global robot_api_status
+    return {"status": robot_api_status}
+
+@app.post("/scramble_old")
+async def scramble_cube_old(scramb_cycle: int = 1): #added a default scramble cycle
     try:
         mqtt_publisher.send_status("Scrambling")
         start_scrambling(scramb_cycle)
@@ -4879,8 +4930,8 @@ async def scramble_cube(scramb_cycle: int = 1): #added a default scramble cycle
             detail=f"An unexpected error occurred: {str(e)}"
         )
 
-@app.post("/solve")
-async def scramble_cube(solv_cycle: int = 1): #added a default solve cycle
+@app.post("/solve_old")
+async def scramble_cube_old(solv_cycle: int = 1): #added a default solve cycle
     try:
         mqtt_publisher.send_status("Solving")
         start_solving(solv_cycle)
