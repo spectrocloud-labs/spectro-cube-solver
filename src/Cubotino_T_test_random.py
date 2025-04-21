@@ -316,7 +316,8 @@ def cube_solution(cube_string, printout, informative):
         solution_Text = 'Error'                   # in that case a short error string is returned
      
     
-    _, robot_moves, total_moves, opt = rm.robot_required_moves(s, solution_Text, simulation=simulation, informative=informative)
+    rdict, robot_moves, total_moves, opt = rm.robot_required_moves(s, solution_Text, simulation=simulation, informative=informative)
+    print("Rdict",rdict)
     est_time = servo.estimate_time(robot_moves, timer, slow_time=0)   # estimated time for the robot moves in argument
     depth = len(s.replace(" ","")) // 2           # cube status depth
   

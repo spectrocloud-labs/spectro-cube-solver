@@ -37,6 +37,7 @@ GPIO.setmode(GPIO.BCM)                 # setting GPIO pins as "Broadcom SOC chan
 GPIO.setwarnings(False)                # setting GPIO to don't return allarms
 from gpiozero import Servo, PWMLED     # import modules for the PWM part
 # ##################################################################################
+from mqtt_publisher_class import mqtt_publisher
 
 
 
@@ -1141,6 +1142,9 @@ def servo_solve_cube(moves, scrambling=False, print_out=s_debug, test=False):
         This is substantially the main function."""
     
     global t_top_cover, b_servo_operable, b_servo_stopped, b_servo_home
+    #move_buffer=""
+    if not scrambling: 
+        mqtt_publisher.send_solution(moves)
 
     start_time=time.time()                         # start time is assigned
     # the received string is analyzed if compatible with servo rotation contraints, and amount of movements
@@ -1192,7 +1196,9 @@ def servo_solve_cube(moves, scrambling=False, print_out=s_debug, test=False):
             curpos+='+'
         else:
             curpos+=' '
-
+        #move_buffer+=moves[i]
+        if not scrambling: 
+            mqtt_publisher.send_command(moves[i], i + 1,string_len)
         if moves[i]=='F':                          # case there is a flip on the move string
             flips=int(moves[i+1])                  # number of flips
             if print_out:                          # case the print_out variable is set true

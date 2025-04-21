@@ -40,7 +40,10 @@ version = '7.4 (31 May 2024)'
 ################  setting argparser for robot remote usage, and other settings  #################
 import argparse
 #from mqtt_publisher import send_solution, send_command, send_image,send_face_image
+from fastapi import FastAPI
+from pydantic import BaseModel
 from mqtt_publisher_class import mqtt_publisher
+app = FastAPI()
 
 # argument parser object creation
 parser = argparse.ArgumentParser(description='CLI arguments for Cubotino_T.py')
@@ -4858,8 +4861,42 @@ def cubeAF():
 
 
 
+@app.post("/scramble")
+async def scramble_cube(scramb_cycle: int = 1): #added a default scramble cycle
+    try:
+        mqtt_publisher.send_status("Scrambling")
+        start_scrambling(scramb_cycle)
+        mqtt_publisher.send_status("Scramble finished")
+        return {"status": "success", "message": "Scramble finished."}
+    except ValueError as ve: # Catch specific exceptions
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,  # 400 Bad Request
+            detail=str(ve),
+        )
+    except Exception as e: # Catch all other exceptions
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,  # 500 Internal Server Error
+            detail=f"An unexpected error occurred: {str(e)}"
+        )
 
-
+@app.post("/solve")
+async def scramble_cube(solv_cycle: int = 1): #added a default solve cycle
+    try:
+        mqtt_publisher.send_status("Solving")
+        start_solving(solv_cycle)
+        mqtt_publisher.send_status("Idle")
+        start_up(first_cycle = False)  # sets the initial variables, to use the camera in manual mode
+        return {"status": "success", "message": "Solve finished."}
+    except ValueError as ve: # Catch specific exceptions
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,  # 400 Bad Request
+            detail=str(ve),
+        )
+    except Exception as e: # Catch all other exceptions
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,  # 500 Internal Server Error
+            detail=f"An unexpected error occurred: {str(e)}"
+        )
 
 if __name__ == "__main__":
     """ This function takes care of few things:
@@ -5136,57 +5173,5 @@ if __name__ == "__main__":
         
     
     # this is essentially the main loop
-    while True:                             # (outer) infinite loop, until the Rpi is shut-off
-        robot_stop = False                  # flag used to stop or allow robot movements
-        robot_idle = True                   # robot is idling
-        timeout = False                     # flag used to limit the cube facelet detection time
-        
-        while not automated:                # while automated is False: (inner) infinite loop, until 'solve' process is chosen
-            if btn:                         # case the variable btn is set True (touch button enables)
-                print('\n'*4)               # prints some empty lines to the terminal
-                print('Waiting for user to start a cycle')  # feedback is printed to the terminal
-                cycle = press_to_start()    # request user to press the button to start a scrambling or solving cycle
-            elif not btn:                   # case the variable btn is set False (testing without the touch button)
-                print('\n'*4)               # prints some empty lines to the terminal
-                print('Cycle is started without using the touch sensor')  # feedback is printed to the terminal
-                cycle = 'solve'             # string 'solve' is returned to start a solving cycle
-            
-            if cycle == 'scramble':         # case the chosen cycle is cube scrambling
-                # scramble can be done more times within this inner while loop
-                scramb_cycle += 1           # counter, for the number of scrambling cycles perfomed within a session, is incremented
-                start_scrambling(scramb_cycle)  # start_scrambling function is called
-            
-            elif cycle == 'solve':          # case the chosen cycle is cube scrambling
-                solv_cycle += 1             # counter, for the number of solving cycles perfomed within a session, is incremented
-                start_solving(solv_cycle)   # start_solving function is called
-                start_up(first_cycle = False)  # sets the initial variables, to use the camera in manual mode
-                break      # (inner) infinite loop is interrupted once cube solving cycle is done or stopped
-      
-        if automated:                           # case automated variable is True
-            for i in range(cycles_num):         # iteration over the number passed to the --cycles argument 
-                start_automated_cycle(i+1, cycles_num, cycle_pause)  # start_automated_cycle finction is called
-                
-                if i+1 < cycles_num:            # case there is at least one more cycle to do
-                    # preparing the camera and variables for the next solving cycle
-                    robot_stop = False          # flag used to stop or allow robot movements
-                    robot_idle = True           # robot is idling
-                    timeout = False             # flag used to limit the cube facelet detection time       
-                    close_camera()              # this is necessary to get rid of analog/digital gains previously used
-                    time.sleep(0.5)             # little delay between the camera closing, and a new camera opening
-                    camera, width, height = set_camera()  # camera has to be re-initialized, to removes previous settings
-                
-                if i+1 == cycles_num:           # case all the cycles have been done
-                    # closing the automated cycles section
-                    print('\n'*6)               # prints some empty lines, on IDE terminal
-                    clear_terminal()            # cleares the terminal
-                    print(f'\nScrambled and solved the cube {cycles_num} times\n')
-                    solv_cycle = cycles_num     # cycle_num is assigned to variable counting the solving cycles manually requested
-                    scramb_cycle = cycles_num   # cycle_num is assigned to variable counting the scrambling cycles manually requested
-                    
-                    if args.shutoff:            # case the --shutoff argument has been provided
-                        # the script is terminated and, depending on Cubotino_T_bash.sh, it might shut the RPI off
-                        quit_func(quit_script = True)
-                    else:                       # case the --shutoff argument has not been provided
-                        automated = False       # automated variable is set False, robot waits for solve button commands
-                
-                start_up(first_cycle = False)   # sets the initial variables, to use the camera in manual mode
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
