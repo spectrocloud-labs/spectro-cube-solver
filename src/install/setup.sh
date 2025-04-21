@@ -131,6 +131,10 @@ elif [[ "$os_version" == "11" ]]; then
     pip3 install st7789==0.0.4
     pip3 install RubikTwoPhase==1.1.1
     pip3 install getmac==0.8.3
+    pip3 install fastapi
+    pip3 install uvicorn 
+    pip3 install paho-mqtt 
+    pip3 install pydantic
 
     set +e
 
