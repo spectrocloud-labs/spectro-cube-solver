@@ -4871,10 +4871,13 @@ def cubeAF():
         quit_func(quit_script=False)                 # quit function is called, withou forcing the script quitting
         return                                       # cubeAF function is terminated
 
+class ScrambleRequest(BaseModel):
+    scramb_cycle: int = 1
 
 @app.post("/scramble")
-async def scramble_cube(scramb_cycle: int = 1):  # Make the route async
+async def scramble_cube(req: ScrambleRequest):  # Make the route async
     global robot_api_status
+    scramb_cycle = req.scramb_cycle
     with status_lock:
         if robot_api_status != "idle":
             raise HTTPException(
@@ -4889,9 +4892,13 @@ async def scramble_cube(scramb_cycle: int = 1):  # Make the route async
         #    robot_api_status = "idle" 
         return {"status": "success", "message": "Scramble Initiated."}
 
+class SolveRequest(BaseModel):
+    solv_cycle: int = 1
+
 @app.post("/solve")
-async def solve_cube(solv_cycle: int = 1):  # Make the route async
+async def solve_cube(req: SolveRequest):  # Make the route async
     global robot_api_status
+    solv_cycle = req.solv_cycle
     with status_lock:
         if robot_api_status != "idle":
             raise HTTPException(
