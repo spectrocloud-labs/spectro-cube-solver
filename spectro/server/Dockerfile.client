@@ -1,0 +1,12 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Copy script into the container
+COPY client /app/client
+
+# Install Python dependencies
+RUN pip install --no-cache-dir requests
+
+# Set default entrypoint, no hardcoded envs
+CMD ["python","-u", "/app/client/cycle_api_client.py"]

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: robot-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: robot-backend
+  template:
+    metadata:
+      labels:
+        app: robot-backend
+    spec:
+      containers:
+      - name: robot-backend
+        image: us-east1-docker.pkg.dev/spectro-images/dev/venkat/rubix-cube-solver/robot-backend:1.0.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: MQTT_BROKER
+          value: "mosquitto-service"  # Kubernetes service name for Mosquitto
+        ports:
+        - containerPort: 8765  # WebSocket
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: robot-backend-service
+spec:
+  selector:
+    app: robot-backend
+  ports:
+    - name: websocket
+      port: 8765
+      targetPort: 8765
+

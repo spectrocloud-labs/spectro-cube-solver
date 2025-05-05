@@ -1,0 +1,8 @@
+FROM node:18 as build
+WORKDIR /app
+COPY ui /app
+RUN npm install && npm run build
+
+# Step 2: Serve it using Nginx
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html

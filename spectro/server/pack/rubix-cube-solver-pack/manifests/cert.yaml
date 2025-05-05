@@ -1,0 +1,19 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned-rubix-issuer
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: robot-tls-cert
+spec:
+  secretName: robot-tls-cert
+  duration: 43800h
+  renewBefore: 360h
+  commonName: robot.local
+  issuerRef:
+    name: selfsigned-rubix-issuer
+    kind: Issuer

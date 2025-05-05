@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: robot-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: robot-ui
+  template:
+    metadata:
+      labels:
+        app: robot-ui
+    spec:
+      containers:
+      - name: robot-ui
+        image: us-east1-docker.pkg.dev/spectro-images/dev/venkat/rubix-cube-solver/robot-ui:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: robot-ui-service
+spec:
+  selector:
+    app: robot-ui
+  ports:
+    - port: 80
+      targetPort: 80

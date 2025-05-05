@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: robot-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - secretName: robot-tls-cert
+  rules:
+  - http:
+      paths:
+      - path: /ws/
+        pathType: Prefix
+        backend:
+          service:
+            name: robot-backend-service
+            port:
+              number: 8765
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: robot-ui-service
+            port:
+              number: 80
+

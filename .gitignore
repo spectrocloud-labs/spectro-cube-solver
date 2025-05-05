@@ -6,7 +6,8 @@ __pycache__/
 # ignore logs and picture of your own bot
 src/CubesDataLog/
 src/CubesStatusPictures/
-
+spectro/server/ui/node_modules
 # ignore settings amd settings backup of your own bot
 *_backup.txt
 *settings.txt
+.DS_Store

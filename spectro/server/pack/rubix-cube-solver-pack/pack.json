@@ -1,0 +1,23 @@
+{
+  "annotations": {},
+  "ansibleRoles": [],
+  "commit_msg": "",
+  "cloudTypes": [
+    "all"
+  ],
+  "displayName": "Spectro Rubix Cube Solver Robot Server",
+  "eol": "",
+  "group": "",
+  "kubeManifests": [
+    "manifests/cert.yaml",
+    "manifests/mqtt.yaml",
+    "manifests/backend.yaml",
+    "manifests/ui.yaml",
+    "manifests/ingress.yaml",
+    "manifests/client.yaml"
+  ],
+  "layer": "addon",
+  "addonType": "system app",
+  "name": "spectro-rubix-cube-solver",
+  "version": "1.0.0"
+}

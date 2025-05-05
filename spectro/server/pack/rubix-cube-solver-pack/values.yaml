@@ -1,0 +1,14 @@
+pack:
+  namespace:
+    robot-server
+  content:
+    images:
+      - image: us-east1-docker.pkg.dev/spectro-images/dev/venkat/rubix-cube-solver/robot-ui:1.0.0
+      - image: us-east1-docker.pkg.dev/spectro-images/dev/venkat/rubix-cube-solver/robot-client:1.0.0
+      - image: us-east1-docker.pkg.dev/spectro-images/dev/venkat/rubix-cube-solver/robot-backend:1.0.0
+      - image: eclipse-mosquitto:2.0.21
+manifests:
+  client:
+     robotIP: 192.168.88.70
+  mqtt:
+     mqttBrokerIP: 192.168.88.80

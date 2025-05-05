@@ -1,0 +1,15 @@
+FROM python:3.9
+
+
+# Set working directory
+WORKDIR /app
+
+# Install Python  dependencies
+RUN pip install --no-cache-dir fastapi uvicorn paho-mqtt websockets
+
+COPY backend /app/backend
+
+EXPOSE  8765
+
+# Start Websocket server
+CMD ["python", "-u", "/app/backend/main.py"]

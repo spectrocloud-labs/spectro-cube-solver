@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: robot-cycle-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: robot-cycle-client
+  template:
+    metadata:
+      labels:
+        app: robot-cycle-client
+    spec:
+      containers:
+      - name: robot-cycle-client
+        image: us-east1-docker.pkg.dev/spectro-images/dev/venkat/rubix-cube-solver/robot-client:1.0.0
+        env:
+        - name: ROBOT_API_URL
+          value: "http://{{ default "192.168.88.71" .Values.robotIP }}:8000"
